@@ -3,7 +3,7 @@ package com.dell.test.systemdefinition;
 import com.cloudant.client.api.Database;
 import com.cloudant.client.api.views.Key;
 import com.cloudant.client.api.views.ViewRequest;
-import com.dell.cpsd.systemdefinition.model.Systemdefinition;
+import com.dell.cpsd.systemdefinition.model.SystemDefinition;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -29,34 +29,25 @@ public class SystemDefinitionService {
 	}
 
 	@RequestMapping(path = "/systemdefinition", method = RequestMethod.POST,  consumes = "application/json")
-	public String saveSystemDefinitio(@RequestBody Systemdefinition systemDefinitionBody,
+	public String saveSystemDefinitio(@RequestBody SystemDefinition systemDefinitionBody,
             HttpServletRequest servletRequest) {
-		
-		System.out.println("***************************************************** : " + systemDefinitionBody.getBody().getConvergedSystem().toString());
+
 		mydb.save(systemDefinitionBody);
 
 		return "saved";
 	}
 	
-	@RequestMapping("/save")
-	public String save() {
-		mydb.save(new Systemdefinition());
-
-		return "saved";
-	}
-	
-	@RequestMapping("/allconvergedsystem")
-	public String getAllConvergedSystem() {
-		String result = "[]";
+	@RequestMapping(path = "/allsystemdefinitions", produces = "application/json")
+	public List<SystemDefinition> getAllSystemDefinitions() {
+		List<SystemDefinition> result = null;
 		
-		List<Systemdefinition> allSystemDefinitions;
 		try {
-			allSystemDefinitions = mydb.getAllDocsRequestBuilder().includeDocs(true).build()
-				.getResponse().getDocsAs(Systemdefinition.class);
+			result = mydb.getAllDocsRequestBuilder().includeDocs(true).build()
+				.getResponse().getDocsAs(SystemDefinition.class);
 			
-			if(allSystemDefinitions != null)
+			if(result == null)
 			{
-				result = allSystemDefinitions.toString();
+				result = new ArrayList<SystemDefinition>();
 			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -66,35 +57,42 @@ public class SystemDefinitionService {
 		return result;
 	}
 	
-//	@RequestMapping(path = "/convergedsystembyid/{csID}", method = RequestMethod.GET)
-//	public String getConvergedSystemByID(final @PathVariable String csID, final HttpServletRequest servletRequest) {
-//		StringBuffer strBuf = new StringBuffer();
-//		String line;
-//		
-//		InputStream inputStream = mydb.find(csID);
-//		BufferedReader bufReader = new BufferedReader(new InputStreamReader(inputStream));
-//		
-//		try {
-//			while((line = bufReader.readLine()) != null) {
-//				strBuf.append(line);
-//			}
-//		} catch (IOException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-//		
-//		return strBuf.toString();
-//	}
-	
-	@RequestMapping(path = "/convergedsystembyid/{csID}", method = RequestMethod.GET)
-	public String getConvergedSystemByID(final @PathVariable String csID, final HttpServletRequest servletRequest) {
-		String result = "";
+	@RequestMapping(path = "/systemdefinitionbyid/{csID}", method = RequestMethod.GET, produces = "application/json")
+	public SystemDefinition getSystemDefinitionByID(final @PathVariable String csID, final HttpServletRequest servletRequest) {
+		SystemDefinition result = null;
 		
-		Systemdefinition systemDefinition = mydb.find(Systemdefinition.class, csID);
+		result = mydb.find(SystemDefinition.class, csID);
 		
-		if(systemDefinition != null)
+		if(result == null)
 		{
-			result = systemDefinition.toString();
+			result = null;
+		}
+		
+		return result;
+	}
+	
+	@RequestMapping(path = "/systemdefinitionbyidentity/{identityID}", method = RequestMethod.GET,  produces = "application/json")
+	public List<SystemDefinition> getSystemDefinitionByIdentity(final @PathVariable String identityID, final HttpServletRequest servletRequest) {
+		List<SystemDefinition> result = new ArrayList<SystemDefinition>();
+		String designDocment = "systemdefinition";
+		String viewName = "byIdentity";
+		
+		ViewRequest<String, SystemDefinition> viewRequest = mydb.getViewRequestBuilder(designDocment, viewName)
+			.newRequest(Key.Type.STRING, SystemDefinition.class)
+			.includeDocs(true)
+			.keys(identityID)
+			.build();
+
+		try {
+			List<SystemDefinition> systemDefinitions = viewRequest.getResponse()
+					.getDocsAs(SystemDefinition.class);
+			
+			if(systemDefinitions != null && systemDefinitions.size() > 0)
+			{
+				result = systemDefinitions;
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 		
 		return result;
@@ -127,29 +125,23 @@ public class SystemDefinitionService {
 //		return result;
 //	}
 	
-	@RequestMapping(path = "/convergedsystembyidentity/{identityID}", method = RequestMethod.GET,  produces = "application/json")
-	public List<Systemdefinition> getConvergedSystemByIdentity(final @PathVariable String identityID, final HttpServletRequest servletRequest) {
-		List<Systemdefinition> result = new ArrayList<Systemdefinition>();
-		String designDocment = "systemdefinition";
-		String viewName = "byIdentity";
-		
-		ViewRequest<String, Systemdefinition> viewRequest = mydb.getViewRequestBuilder(designDocment, viewName)
-			.newRequest(Key.Type.STRING, Systemdefinition.class)
-			.includeDocs(true)
-			.build();
-
-		try {
-			List<Systemdefinition> systemDefinitions = viewRequest.getResponse()
-					.getDocsAs(Systemdefinition.class);
-			
-			if(systemDefinitions != null && systemDefinitions.size() > 0)
-			{
-				result = systemDefinitions;
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		
-		return result;
-	}
+//	@RequestMapping(path = "/convergedsystembyid/{csID}", method = RequestMethod.GET)
+//	public String getConvergedSystemByID(final @PathVariable String csID, final HttpServletRequest servletRequest) {
+//		StringBuffer strBuf = new StringBuffer();
+//		String line;
+//		
+//		InputStream inputStream = mydb.find(csID);
+//		BufferedReader bufReader = new BufferedReader(new InputStreamReader(inputStream));
+//		
+//		try {
+//			while((line = bufReader.readLine()) != null) {
+//				strBuf.append(line);
+//			}
+//		} catch (IOException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+//		
+//		return strBuf.toString();
+//	}
 }
